@@ -7,7 +7,6 @@ README_PATH = REPO_ROOT / "README.md"
 MAP_NAME_SPLITTER = "_v"
 PREVIEW_IMAGES_DIR = REPO_ROOT / ".github" / "images"
 PREVIEW_IMAGES_URL = ".github/images/"
-MAP_FOLDER_URL = "https://github.com/tmthomsen/RedAlert_TheStrandvaskerCollection/raw/main/"
 
 HEADER = (
     "# C&C Red Alert: The Strandvasker Collection (Map Pack)\n"
@@ -46,7 +45,8 @@ def GenerateReadme(outputFile: Path):
 
 
 def GetDownloadURL(mapNameClean: str, mapNameFull: str) -> str:
-    return f"### [{mapNameClean}]({MAP_FOLDER_URL}{quote(mapNameFull)})"
+    # Relative link; GitHub resolves it against the current repo and branch.
+    return f"### [{mapNameClean}]({quote(mapNameFull)}?raw=true)"
 
 
 def GetMapPreviewImageStr(mapNameClean: str, mapNameFull: str) -> str:
