@@ -1,59 +1,60 @@
-import subprocess
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
+from urllib.parse import quote
 
-NAME_README_FILE_OUTPUT = "README.md"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+README_PATH = REPO_ROOT / "README.md"
 MAP_NAME_SPLITTER = "_v"
-MAP_PREVIEW_IMAGES_FOLDER_URL = "/images/"
-MAP_FOLDER_URL = "https://github.com/tmthomsen/RedAlert_TheStrandvaskerCollection/raw/main/maps/"
+PREVIEW_IMAGES_DIR = REPO_ROOT / ".github" / "images"
+PREVIEW_IMAGES_URL = ".github/images/"
+MAP_FOLDER_URL = "https://github.com/tmthomsen/RedAlert_TheStrandvaskerCollection/raw/main/"
 
-def GenerateReadme(outputFile):
-    try:
-        parentDir = Path.cwd().parent
+HEADER = (
+    "# C&C Red Alert: The Strandvasker Collection (Map Pack)\n"
+    "A collection of the absolute best maps created for C&C Red Alert post anno 2020 in Jutland, Denmark.<br>\n\n"
+    "### Installation\n"
+    "For CnCNet, clone this repo to the `...\\CnCNet\\RedAlert1_Online\\Maps` folder.<br><br>\n\n"
+)
 
-        mapFilesPaths = list(parentDir.glob("*.mpr"))
-        mapFiles = [str(f) for f in mapFilesPaths]
 
-        #subprocess.run(["git","pull"])
+def GenerateReadme(outputFile: Path):
+    mapFileNames = sorted(f.name for f in REPO_ROOT.glob("*.mpr"))
 
-        with open(outputFile, "w") as readmeFile:
-            readmeFile.write("# C&C Red Alert: The Strandvasker Collection (Map Pack)\n")
-            readmeFile.write("A collection of the absolute best maps created for C&C Red Alert post anno 2020 in Jutland, Denmark.<br>\n\n")
+    mapGroups = defaultdict(list)
+    for fileName in mapFileNames:
+        if MAP_NAME_SPLITTER in fileName:
+            groupName = fileName.split(MAP_NAME_SPLITTER)[0]
+            mapGroups[groupName].append(fileName)
 
-            readmeFile.write("### Installation\n")
-            readmeFile.write("For CnCNet, clone this repo to the `...\CnCNet\RedAlert1_Online\Maps` folder.<br><br>\n\n")
+    with open(outputFile, "w", encoding="utf-8", newline="\n") as readmeFile:
+        readmeFile.write(HEADER)
 
-            mapGroups = defaultdict(list)
-            for file in mapFiles:
-                if MAP_NAME_SPLITTER in file:
-                    groupName = file.split(MAP_NAME_SPLITTER)[0]
-                    mapGroups[groupName].append(file)
+        for groupName, mapVersions in sorted(mapGroups.items()):
+            readmeFile.write(f"## {groupName}\n")
 
-            for groupName, mapVersions in sorted(mapGroups.items()):
-                readmeFile.write("## " + groupName + "\n")
+            for mapNameFull in sorted(mapVersions):
+                mapNameClean = mapNameFull.replace("_", " ").replace(".mpr", "")
+                readmeFile.write(GetDownloadURL(mapNameClean, mapNameFull) + "<br>\n")
 
-                for mapNameFull in sorted(mapVersions):
-                    mapNameClean = mapNameFull.replace("_", " ").replace(".mpr", "")
-                    readmeFile.write(GetDownloadURL(mapNameClean, mapNameFull) + "<br>\n")
-                    readmeFile.write(GetMapPreviewImageStr(mapNameClean, mapNameFull) + "<br>\n")
+                preview = GetMapPreviewImageStr(mapNameClean, mapNameFull)
+                if preview:
+                    readmeFile.write(preview + "<br>\n")
 
-                readmeFile.write("<br>\n")
+            readmeFile.write("<br>\n")
 
-        #subprocess.run(["git","add", NAME_README_FILE_OUTPUT])
-        #subprocess.run(["git","commit", "-m", "Readme auto-updated."])
-        #subprocess.run(["git", "push"])
+    print(f"Successfully written to '{outputFile}'.")
 
-        print(f"Succesfully written to '{outputFile}'.\n")
 
-    except Exception as e:
-        print(f"Error: {e}")
+def GetDownloadURL(mapNameClean: str, mapNameFull: str) -> str:
+    return f"### [{mapNameClean}]({MAP_FOLDER_URL}{quote(mapNameFull)})"
 
-def GetDownloadURL(mapNameClean, mapNameFull) -> str:
-    return f"### [{mapNameClean}]({MAP_FOLDER_URL}{mapNameFull})"
 
-def GetMapPreviewImageStr(mapNameClean, mapNameFull) -> str:
-    mapNameAndVersion = mapNameFull.replace(".mpr", ".png")
-    return f"![{mapNameClean}]({MAP_PREVIEW_IMAGES_FOLDER_URL}{mapNameAndVersion})"
+def GetMapPreviewImageStr(mapNameClean: str, mapNameFull: str) -> str:
+    imageName = mapNameFull.replace(".mpr", ".png")
+    if not (PREVIEW_IMAGES_DIR / imageName).exists():
+        return ""
+    return f"![{mapNameClean}]({PREVIEW_IMAGES_URL}{quote(imageName)})"
+
 
 if __name__ == "__main__":
-    GenerateReadme(NAME_README_FILE_OUTPUT)
+    GenerateReadme(README_PATH)
